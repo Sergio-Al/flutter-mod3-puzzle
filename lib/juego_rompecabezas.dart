@@ -1,28 +1,26 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'dart:math' show Random;
 
-class PuzzleGame extends StatefulWidget {
-  const PuzzleGame({super.key});
+class JuegoRompecabezas extends StatefulWidget {
+  const JuegoRompecabezas({super.key});
 
   @override
-  State<PuzzleGame> createState() => _PuzzleGameState();
+  State<JuegoRompecabezas> createState() => _EstadoJuegoRompecabezas();
 }
 
-class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateMixin {
-  // Posición de la ficha vacía (0 representa el espacio vacío)
+class _EstadoJuegoRompecabezas extends State<JuegoRompecabezas> with SingleTickerProviderStateMixin {
+  // Posicion de la ficha vacia (0 representa el espacio vacio)
   late List<List<int>> cuadriculaJuego;
   late int filaVacia;
   late int columnaVacia;
-  // Cuadrícula de referencia (objetivo)
+  // Cuadricula de referencia (objetivo)
   late List<List<int>> cuadriculaObjetivo;
   bool haGanado = false;
   final Random _aleatorio = Random();
 
-  // Controlador de animación para el efecto de arrastre
+  // Controlador de animacion para el efecto de arrastre
   late AnimationController _controladorArrastre;
-  // Posición de la ficha actualmente arrastrada
+  // Posicion de la ficha actualmente arrastrada
   int? _filaFichaArrastrada;
   int? _columnaFichaArrastrada;
   // Progreso del arrastre para efecto visual
@@ -35,7 +33,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
     _generarNuevoObjetivo();
     _inicializarPuzzle();
 
-    // Inicializar controlador de animación para el efecto de arrastre
+    // Inicializar controlador de animacion para el efecto de arrastre
     _controladorArrastre = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -53,7 +51,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
 
   @override
   void dispose() {
-    _controladorArrastre.dispose(); // Liberar el controlador de animación
+    _controladorArrastre.dispose();
     super.dispose();
   }
 
@@ -62,21 +60,21 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
     cuadriculaObjetivo = [
       [1, 2, 3],
       [4, 5, 6],
-      [7, 8, 0], // 0 representa la ficha vacía
+      [7, 8, 0], // 0 representa la ficha vacia
     ];
 
-    // Mezclar la cuadrícula objetivo con un patrón diferente cada vez
+    // Mezclar la cuadricula objetivo con un patron diferente cada vez
     int filaObjVacio = 2;
     int columnaObjVacio = 2;
 
-    // Hacer suficientes movimientos aleatorios para crear un objetivo válido pero desafiante
+    // Hacer suficientes movimientos aleatorios para crear un objetivo valido pero desafiante
     // Usando menos movimientos que la mezcla principal del puzzle para mantenerlo razonable
     int movimientos = _aleatorio.nextInt(20) + 15; // Entre 15-35 movimientos
 
     for (int i = 0; i < movimientos; i++) {
       List<List<int>> movimientosPosibles = [];
 
-      // Verificar todas las fichas adyacentes al espacio vacío
+      // Verificar todas las fichas adyacentes al espacio vacio
       if (filaObjVacio > 0) movimientosPosibles.add([filaObjVacio - 1, columnaObjVacio]);
       if (filaObjVacio < 2) movimientosPosibles.add([filaObjVacio + 1, columnaObjVacio]);
       if (columnaObjVacio > 0) movimientosPosibles.add([filaObjVacio, columnaObjVacio - 1]);
@@ -85,21 +83,21 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
       // Seleccionar un movimiento aleatorio y aplicarlo
       final movimiento = movimientosPosibles[_aleatorio.nextInt(movimientosPosibles.length)];
 
-      // Intercambiar la ficha con el espacio vacío
+      // Intercambiar la ficha con el espacio vacio
       cuadriculaObjetivo[filaObjVacio][columnaObjVacio] = cuadriculaObjetivo[movimiento[0]][movimiento[1]];
       cuadriculaObjetivo[movimiento[0]][movimiento[1]] = 0;
 
-      // Actualizar la posición del espacio vacío
+      // Actualizar la posicion del espacio vacio
       filaObjVacio = movimiento[0];
       columnaObjVacio = movimiento[1];
     }
   }
 
   void _inicializarPuzzle() {
-    // Inicializar la cuadrícula jugable para que coincida con el objetivo (comenzando resuelto)
+    // Inicializar la cuadricula jugable para que coincida con el objetivo (comenzando resuelto)
     cuadriculaJuego = List.generate(3, (i) => List.generate(3, (j) => cuadriculaObjetivo[i][j]));
 
-    // Encontrar la posición de la ficha vacía
+    // Encontrar la posicion de la ficha vacia
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 3; j++) {
         if (cuadriculaJuego[i][j] == 0) {
@@ -113,7 +111,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
   }
 
   bool _puedeMoverseFicha(int fila, int columna) {
-    // Una ficha puede moverse si está adyacente al espacio vacío
+    // Una ficha puede moverse si esta adyacente al espacio vacio
     return (fila == filaVacia && (columna == columnaVacia - 1 || columna == columnaVacia + 1)) ||
         (columna == columnaVacia && (fila == filaVacia - 1 || fila == filaVacia + 1));
   }
@@ -121,11 +119,11 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
   void _moverFicha(int fila, int columna) {
     if (_puedeMoverseFicha(fila, columna)) {
       setState(() {
-        // Intercambiar la ficha tocada con el espacio vacío
+        // Intercambiar la ficha tocada con el espacio vacio
         cuadriculaJuego[filaVacia][columnaVacia] = cuadriculaJuego[fila][columna];
         cuadriculaJuego[fila][columna] = 0;
 
-        // Actualizar la posición del espacio vacío
+        // Actualizar la posicion del espacio vacio
         filaVacia = fila;
         columnaVacia = columna;
 
@@ -147,7 +145,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
 
   void _actualizarArrastre(Offset delta) {
     if (_estaArrastrando && _filaFichaArrastrada != null && _columnaFichaArrastrada != null) {
-      // Calcular en qué dirección estamos arrastrando (horizontal o vertical)
+      // Calcular en que direccion estamos arrastrando (horizontal o vertical)
       bool esArrastreHorizontal = _filaFichaArrastrada == filaVacia;
       bool esArrastreVertical = _columnaFichaArrastrada == columnaVacia;
 
@@ -155,20 +153,20 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
       double dx = esArrastreHorizontal ? delta.dx : 0;
       double dy = esArrastreVertical ? delta.dy : 0;
 
-      // Restringir aún más la dirección en función de la posición de la ficha vacía
+      // Restringir aun mas la direccion en funcion de la posicion de la ficha vacia
       if (esArrastreHorizontal) {
-        // Si el vacío está a la derecha, solo puede arrastrar hacia la derecha (dx positivo)
+        // Si el vacio esta a la derecha, solo puede arrastrar hacia la derecha (dx positivo)
         if (columnaVacia > _columnaFichaArrastrada! && dx < 0) dx = 0;
-        // Si el vacío está a la izquierda, solo puede arrastrar hacia la izquierda (dx negativo)
+        // Si el vacio esta a la izquierda, solo puede arrastrar hacia la izquierda (dx negativo)
         if (columnaVacia < _columnaFichaArrastrada! && dx > 0) dx = 0;
         // Limitar la distancia de arrastre
         dx = dx.clamp(-84.0, 84.0);
       }
 
       if (esArrastreVertical) {
-        // Si el vacío está abajo, solo puede arrastrar hacia abajo (dy positivo)
+        // Si el vacio esta abajo, solo puede arrastrar hacia abajo (dy positivo)
         if (filaVacia > _filaFichaArrastrada! && dy < 0) dy = 0;
-        // Si el vacío está arriba, solo puede arrastrar hacia arriba (dy negativo)
+        // Si el vacio esta arriba, solo puede arrastrar hacia arriba (dy negativo)
         if (filaVacia < _filaFichaArrastrada! && dy > 0) dy = 0;
         // Limitar la distancia de arrastre
         dy = dy.clamp(-84.0, 84.0);
@@ -201,13 +199,13 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
       }
 
       if (debeMoverse) {
-        // Animar la finalización del arrastre
+        // Animar la finalizacion del arrastre
         _controladorArrastre.forward(from: 0).then((_) {
           _moverFicha(_filaFichaArrastrada!, _columnaFichaArrastrada!);
           _controladorArrastre.reset();
         });
       } else {
-        // Restablecer arrastre si no se movió lo suficiente
+        // Restablecer arrastre si no se movio lo suficiente
         setState(() {
           _estaArrastrando = false;
           _desplazamientoArrastre = Offset.zero;
@@ -219,7 +217,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
   }
 
   void _verificarVictoria() {
-    // Comparar la cuadrícula actual con la cuadrícula objetivo
+    // Comparar la cuadricula actual con la cuadricula objetivo
     bool esVictoria = true;
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 3; j++) {
@@ -248,7 +246,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
             const Icon(Icons.emoji_events, color: Colors.amber),
             const SizedBox(width: 10),
             const Text(
-              '¡Felicidades! ¡Puzzle Resuelto!',
+              '¡Felicidades! ¡Rompecabezas Resuelto!',
               style: TextStyle(fontSize: 16),
             ),
           ],
@@ -273,7 +271,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
     setState(() {
       // Generar un nuevo objetivo primero
       _generarNuevoObjetivo();
-      // Luego inicializar la cuadrícula del puzzle basada en el nuevo objetivo
+      // Luego inicializar la cuadricula del puzzle basada en el nuevo objetivo
       _inicializarPuzzle();
       // Luego mezclar para comenzar el juego
       _mezclarPuzzle();
@@ -281,15 +279,15 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
   }
 
   void _mezclarPuzzle() {
-    // Mezclar el puzzle haciendo movimientos válidos aleatorios
+    // Mezclar el puzzle haciendo movimientos validos aleatorios
     setState(() {
       haGanado = false;
 
-      // Hacer movimientos aleatorios válidos
+      // Hacer movimientos aleatorios validos
       for (int i = 0; i < 100; i++) { // Hacer 100 movimientos aleatorios
         List<List<int>> movimientosPosibles = [];
 
-        // Verificar todas las fichas adyacentes al espacio vacío
+        // Verificar todas las fichas adyacentes al espacio vacio
         if (filaVacia > 0) movimientosPosibles.add([filaVacia - 1, columnaVacia]);
         if (filaVacia < 2) movimientosPosibles.add([filaVacia + 1, columnaVacia]);
         if (columnaVacia > 0) movimientosPosibles.add([filaVacia, columnaVacia - 1]);
@@ -298,11 +296,11 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
         // Seleccionar un movimiento aleatorio y aplicarlo
         final movimiento = movimientosPosibles[_aleatorio.nextInt(movimientosPosibles.length)];
 
-        // Intercambiar la ficha con el espacio vacío (sin llamar a setState o verificar victoria)
+        // Intercambiar la ficha con el espacio vacio (sin llamar a setState o verificar victoria)
         cuadriculaJuego[filaVacia][columnaVacia] = cuadriculaJuego[movimiento[0]][movimiento[1]];
         cuadriculaJuego[movimiento[0]][movimiento[1]] = 0;
 
-        // Actualizar la posición del espacio vacío
+        // Actualizar la posicion del espacio vacio
         filaVacia = movimiento[0];
         columnaVacia = movimiento[1];
       }
@@ -313,7 +311,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Juego de Puzzle', style: TextStyle(color: Colors.white)),
+        title: const Text('Juego de Rompecabezas', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.orange[500],
         actions: [
           IconButton(
@@ -324,7 +322,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
           IconButton(
             icon: const Icon(Icons.shuffle, color: Colors.white),
             onPressed: _mezclarPuzzle,
-            tooltip: 'Mezclar Puzzle Actual',
+            tooltip: 'Mezclar Rompecabezas Actual',
           ),
         ],
       ),
@@ -337,7 +335,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Sección de objetivo
+                // Seccion de objetivo
                 Column(
                   children: [
                     Row(
@@ -354,13 +352,13 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
                         IconButton(
                           icon: const Icon(Icons.lightbulb_outline, color: Colors.amber),
                           onPressed: () {
-                            // Mostrar un diálogo de pista
+                            // Mostrar un dialogo de pista
                             showDialog(
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
                                   title: const Text("Pista"),
-                                  content: const Text("Organiza las fichas en la cuadrícula inferior para que coincidan con el patrón mostrado en la cuadrícula superior. Puedes arrastrar las fichas para moverlas."),
+                                  content: const Text("Organiza las fichas en la cuadricula inferior para que coincidan con el patron mostrado en la cuadricula superior. Puedes arrastrar las fichas para moverlas."),
                                   actions: [
                                     TextButton(
                                       child: const Text("¡Entendido!"),
@@ -399,7 +397,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
                           Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Mostrar cuadrícula objetivo
+                              // Mostrar cuadricula objetivo
                               for (int i = 0; i < 3; i++)
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -407,7 +405,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
                                     for (int j = 0; j < 3; j++)
                                       cuadriculaObjetivo[i][j] == 0
                                           ? Container(height: 54, width: 54)
-                                          : _construirFicha(cuadriculaObjetivo[i][j].toString(), pequenia: true,
+                                          : _construirFicha(cuadriculaObjetivo[i][j].toString(), pequena: true,
                                               color: _obtenerColorFicha(cuadriculaObjetivo[i][j].toString())),
                                   ],
                                 ),
@@ -419,11 +417,11 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
                   ],
                 ),
 
-                // Cuadrícula de puzzle jugable (más grande)
+                // Cuadricula de puzzle jugable (mas grande)
                 Column(
                   children: [
                     const Text(
-                      'Juega Aquí',
+                      'Juega Aqui',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -454,7 +452,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
                           Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Construir cuadrícula de puzzle dinámica desde el estado
+                              // Construir cuadricula de puzzle dinamica desde el estado
                               for (int i = 0; i < 3; i++)
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -492,7 +490,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
     );
   }
 
-  // Obtener color de ficha basado en número
+  // Obtener color de ficha basado en numero
   Color _obtenerColorFicha(String numero) {
     final Map<String, Color> mapaColores = {
       '1': Colors.blue,
@@ -507,7 +505,7 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
     return mapaColores[numero] ?? Colors.grey;
   }
 
-  // Ficha interactiva con detección de gestos de arrastre
+  // Ficha interactiva con deteccion de gestos de arrastre
   Widget _construirFichaArrastrable(String numero, int fila, int columna) {
     Color colorFicha = _obtenerColorFicha(numero);
     bool estaMovible = _puedeMoverseFicha(fila, columna);
@@ -563,39 +561,39 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
     );
   }
 
-  // Ficha estática (para la vista previa del objetivo pequeño)
+  // Ficha estatica (para la vista previa del objetivo pequeno)
   Widget _construirFicha(
     String numero, {
-    bool pequenia = false,
+    bool pequena = false,
     Color color = Colors.blue,
   }) {
-    final tamanio = pequenia ? 50.0 : 80.0;
-    final tamanioFuente = pequenia ? 20.0 : 30.0;
+    final tamano = pequena ? 50.0 : 80.0;
+    final tamanoFuente = pequena ? 20.0 : 30.0;
 
     return Container(
-      width: tamanio,
-      height: tamanio,
+      width: tamano,
+      height: tamano,
       margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         border: Border.all(color: color, width: 1.5),
-        borderRadius: BorderRadius.circular(pequenia ? 6 : 10),
-        color: pequenia ? Colors.white : color.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(pequena ? 6 : 10),
+        color: pequena ? Colors.white : color.withOpacity(0.5),
       ),
       child: Center(
         child: Text(
           numero,
-          style: TextStyle(fontSize: tamanioFuente, color: Colors.black54),
+          style: TextStyle(fontSize: tamanoFuente, color: Colors.black54),
         ),
       ),
     );
   }
 }
 
-class Home extends StatelessWidget {
-  const Home({super.key});
+class Inicio extends StatelessWidget {
+  const Inicio({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const PuzzleGame();
+    return const JuegoRompecabezas();
   }
 }
