@@ -3,6 +3,22 @@
 import 'package:flutter/material.dart';
 import 'dart:math' show Random;
 
+class _NodoBusqueda implements Comparable<_NodoBusqueda> {
+  final List<List<int>> estado;
+  final int costo;
+  final int heuristica;
+  final _NodoBusqueda? padre;
+  
+  _NodoBusqueda(this.estado, this.costo, this.heuristica, this.padre);
+  
+  int get funcionF => costo + heuristica;
+  
+  @override
+  int compareTo(_NodoBusqueda otro) {
+    return funcionF.compareTo(otro.funcionF);
+  }
+}
+
 class PuzzleGame extends StatefulWidget {
   const PuzzleGame({super.key});
 
@@ -19,6 +35,11 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
   late List<List<int>> cuadriculaObjetivo;
   bool haGanado = false;
   final Random _aleatorio = Random();
+
+  // Variables para A* solver
+  bool _resolviendo = false;
+  List<List<List<int>>> _pasosSolucion = [];
+  int _pasoActual = 0;
 
   // Controlador de animación para el efecto de arrastre
   late AnimationController _controladorArrastre;
@@ -309,6 +330,236 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
     });
   }
 
+  // Calcular la distancia Manhattan (heurística para A*)
+  int _calcularDistanciaManhattan(List<List<int>> estado) {
+    int distancia = 0;
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        int valor = estado[i][j];
+        if (valor != 0) {
+          // Encontrar la posición correcta del valor en el objetivo
+          int filaObjetivo = -1;
+          int columnaObjetivo = -1;
+          for (int m = 0; m < 3; m++) {
+            for (int n = 0; n < 3; n++) {
+              if (cuadriculaObjetivo[m][n] == valor) {
+                filaObjetivo = m;
+                columnaObjetivo = n;
+                break;
+              }
+            }
+            if (filaObjetivo != -1) break;
+          }
+          
+          // Sumar la distancia Manhattan (|x1 - x2| + |y1 - y2|)
+          distancia += (i - filaObjetivo).abs() + (j - columnaObjetivo).abs();
+        }
+      }
+    }
+    return distancia;
+  }
+
+  // Convertir matriz a string para usarla como clave en el conjunto visitado
+  String _estadoAClave(List<List<int>> estado) {
+    return estado.map((fila) => fila.join(',')).join(';');
+  }
+
+  // Encontrar la posición del espacio vacío (0) en un estado
+  List<int> _encontrarVacio(List<List<int>> estado) {
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        if (estado[i][j] == 0) {
+          return [i, j];
+        }
+      }
+    }
+    return [-1, -1]; // No debería llegar aquí
+  }
+
+  // Obtener estados sucesores a partir de un estado
+  List<List<List<int>>> _obtenerSucesores(List<List<int>> estado) {
+    List<List<List<int>>> sucesores = [];
+    final posicionVacio = _encontrarVacio(estado);
+    final int fila = posicionVacio[0];
+    final int columna = posicionVacio[1];
+    
+    // Direcciones posibles (arriba, abajo, izquierda, derecha)
+    final List<List<int>> direcciones = [
+      [-1, 0], [1, 0], [0, -1], [0, 1]
+    ];
+    
+    for (var direccion in direcciones) {
+      final int nuevaFila = fila + direccion[0];
+      final int nuevaColumna = columna + direccion[1];
+      
+      // Verificar si la nueva posición está dentro de los límites
+      if (nuevaFila >= 0 && nuevaFila < 3 && nuevaColumna >= 0 && nuevaColumna < 3) {
+        // Crear una copia profunda del estado actual
+        List<List<int>> nuevoEstado = List.generate(
+          3, (i) => List.generate(3, (j) => estado[i][j])
+        );
+        
+        // Obtener el valor de la ficha que se movería
+        int valorFicha = estado[nuevaFila][nuevaColumna];
+        
+        // Verificar restricción para la ficha 4
+        if (valorFicha == 4) {
+          // Si es un movimiento horizontal, ignorarlo
+          if (nuevaFila == fila) {
+            continue; // No permitir que la ficha 4 se mueva horizontalmente
+          }
+        }
+        
+        // Intercambiar la ficha con el espacio vacío
+        nuevoEstado[fila][columna] = valorFicha;
+        nuevoEstado[nuevaFila][nuevaColumna] = 0;
+        
+        sucesores.add(nuevoEstado);
+      }
+    }
+    
+    return sucesores;
+  }
+
+  // Implementación del algoritmo A*
+  Future<void> _resolverConAStar() async {
+    if (_resolviendo) return;
+    
+    setState(() {
+      _resolviendo = true;
+      _pasosSolucion = [];
+      _pasoActual = 0;
+    });
+    
+    // Usar lista ordenada como alternativa a PriorityQueue
+    List<_NodoBusqueda> colaPrioridad = [];
+    
+    // Conjunto para estados visitados
+    final visitados = <String>{};
+    
+    // Estado inicial
+    final estadoInicial = List.generate(
+      3, (i) => List.generate(3, (j) => cuadriculaJuego[i][j])
+    );
+    
+    // Calcular heurística inicial
+    final heuristicaInicial = _calcularDistanciaManhattan(estadoInicial);
+    
+    // Crear nodo inicial
+    final nodoInicial = _NodoBusqueda(estadoInicial, 0, heuristicaInicial, null);
+    
+    // Agregar a la lista de prioridad
+    colaPrioridad.add(nodoInicial);
+    
+    // Buscar solución
+    while (colaPrioridad.isNotEmpty) {
+      // Ordenar la lista por valor f (costo + heurística)
+      colaPrioridad.sort((a, b) => a.funcionF.compareTo(b.funcionF));
+      
+      // Extraer nodo con menor f
+      final nodoActual = colaPrioridad.removeAt(0);
+      
+      // Verificar si el estado es el objetivo
+      if (_calcularDistanciaManhattan(nodoActual.estado) == 0) {
+        // Solución encontrada, reconstruir camino
+        List<List<List<int>>> camino = [];
+        var nodo = nodoActual;
+        while (nodo.padre != null) {
+          camino.insert(0, nodo.estado);
+          nodo = nodo.padre!;
+        }
+        
+        setState(() {
+          _pasosSolucion = camino;
+          _pasoActual = 0;
+          // Iniciar la animación de la solución
+          _animarSolucion();
+        });
+        
+        return;
+      }
+      
+      // Marcar como visitado
+      final claveEstado = _estadoAClave(nodoActual.estado);
+      if (visitados.contains(claveEstado)) continue;
+      visitados.add(claveEstado);
+      
+      // Generar sucesores
+      final sucesores = _obtenerSucesores(nodoActual.estado);
+      
+      for (var sucesor in sucesores) {
+        final claveSucc = _estadoAClave(sucesor);
+        if (visitados.contains(claveSucc)) continue;
+        
+        final nuevoCosto = nodoActual.costo + 1;
+        final nuevaHeuristica = _calcularDistanciaManhattan(sucesor);
+        
+        colaPrioridad.add(_NodoBusqueda(
+          sucesor, nuevoCosto, nuevaHeuristica, nodoActual
+        ));
+      }
+    }
+    
+    // Si llegamos aquí, no se encontró solución
+    setState(() {
+      _resolviendo = false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No se pudo encontrar una solución"),
+          duration: Duration(seconds: 3),
+        )
+      );
+    });
+  }
+
+  // Animar la solución paso a paso
+  Future<void> _animarSolucion() async {
+    if (_pasoActual >= _pasosSolucion.length) {
+      setState(() {
+        _resolviendo = false;
+      });
+      return;
+    }
+    
+    // Aplicar el paso actual
+    final nuevoEstado = _pasosSolucion[_pasoActual];
+    
+    setState(() {
+      // Actualizar la cuadrícula
+      cuadriculaJuego = List.generate(
+        3, (i) => List.generate(3, (j) => nuevoEstado[i][j])
+      );
+      
+      // Encontrar la nueva posición del espacio vacío
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+          if (cuadriculaJuego[i][j] == 0) {
+            filaVacia = i;
+            columnaVacia = j;
+            break;
+          }
+        }
+      }
+      
+      _pasoActual++;
+    });
+    
+    // Verificar victoria en cada paso
+    _verificarVictoria();
+    
+    // Esperar antes del siguiente paso
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Si aún no hemos terminado y seguimos resolviendo, continuar con el siguiente paso
+    if (_resolviendo && _pasoActual < _pasosSolucion.length) {
+      _animarSolucion();
+    } else {
+      setState(() {
+        _resolviendo = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -422,13 +673,30 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
                 // Cuadrícula de puzzle jugable (más grande)
                 Column(
                   children: [
-                    const Text(
-                      'Juega Aquí',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.brown,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Juega Aquí',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.brown,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        // Botón para resolver automáticamente
+                        ElevatedButton.icon(
+                          onPressed: _resolviendo ? null : _resolverConAStar,
+                          icon: const Icon(Icons.auto_fix_high),
+                          label: Text(_resolviendo ? 'Resolviendo...' : 'Resolver Auto'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -477,6 +745,24 @@ class _PuzzleGameState extends State<PuzzleGame> with SingleTickerProviderStateM
                                 Icons.check_circle_outline,
                                 color: Colors.green,
                                 size: 80,
+                              ),
+                            ),
+                          // Indicador de resolución automática
+                          if (_resolviendo)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  "Resolviendo...",
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
                         ],
